@@ -345,7 +345,7 @@ interface BookOne {
   title: string;
   author: string;
   genre?: string;
-  // method
+  // methods
   printAuthor(): void;
   printTitle(message: string): string;
 }
@@ -369,3 +369,409 @@ deepWork.title = 'New Title'; // allowed
 
 deepWork.printAuthor();
 deepWork.printTitle('is awesome.');
+
+// Alternative methods
+interface BookTwo {
+  readonly isbn: number;
+  title: string;
+  author: string;
+  genre?: string;
+  // method
+  printAuthor(): void;
+  printTitle(message: string): string;
+  printSomething: (someValue: number) => number;
+}
+
+const deepWork2: BookTwo = {
+  isbn: 9781455586691,
+  title: 'Deep Work',
+  author: 'Cal Newport',
+  genre: 'Self-help',
+  printAuthor() {
+    console.log(this.author);
+  },
+  printTitle(value) {
+    console.log(`${this.title} ${value}`);
+    return `${this.title} ${value}`;
+  },
+  // First option
+  // printSomething: function (someValue) {
+  //   return someValue;
+  // },
+  // Second option
+  // printSomething: (someValue) => {
+  //   // console.log(this) // This will not work with arrow function. Instead do this:
+  //   console.log(deepWork2.author);
+  //   return someValue;
+  // },
+  // Third option
+  printSomething(someValue) {
+    return someValue;
+  },
+};
+
+console.log(deepWork2.printSomething(34));
+
+// Challenge
+interface Computer {
+  readonly id: number;
+  brand: string;
+  ram: number;
+  upgradeRam(increase: number): number;
+  storage?: number;
+}
+
+const laptop: Computer = {
+  id: 1,
+  brand: 'random brand',
+  ram: 8,
+  upgradeRam(amount) {
+    this.ram += amount;
+    return this.ram;
+  },
+};
+
+laptop.storage = 256;
+laptop.upgradeRam(4);
+console.log('Laptop: ', laptop);
+
+// Interfaces, extends, merge
+
+interface Person {
+  name: string;
+  getDetails(): string;
+}
+
+interface DogOwner {
+  dogName: string;
+  getDogDetails(): string;
+}
+
+// Merging (Reopen) the types. We can add properties to the interface
+interface Person {
+  age: number;
+}
+
+const person: Person = {
+  name: 'John',
+  age: 30,
+  getDetails() {
+    return `Name: ${this.name}, Age: ${this.age}`;
+  },
+};
+
+console.log(person.getDetails());
+
+// Extending the interface
+interface EmployeeOne extends Person {
+  employeeId: number;
+}
+
+const employee = {
+  name: 'Jane',
+  age: 28,
+  employeeId: 1234,
+  getDetails() {
+    return `Name: ${this.name}, Age: ${this.age}, EmployeeId: ${this.employeeId}`;
+  },
+};
+
+console.log(employee.getDetails());
+
+// Extends from multiple interfaces
+interface ManagerOne extends Person, DogOwner {
+  managePeople(): void;
+}
+
+const manager: ManagerOne = {
+  name: 'Bob',
+  age: 35,
+  dogName: 'Rex',
+  getDetails() {
+    return `Name: ${this.name}, Age: ${this.age}`;
+  },
+  getDogDetails() {
+    return `Dog Name is: ${this.name}`;
+  },
+  managePeople() {
+    console.log('Managing people');
+  },
+};
+
+manager.managePeople();
+
+// Challenge
+interface Persona {
+  name: string;
+}
+
+interface DogOwner extends Persona {
+  dogName: string;
+}
+
+interface ManagerTwo extends Persona {
+  managePeople(): void;
+  delegateTasks(): void;
+}
+
+const employeeTwo: Persona | DogOwner | ManagerTwo = getEmployee();
+
+function getEmployee(): Persona | DogOwner | ManagerTwo {
+  const random = Math.random();
+
+  if (random < 0.33) {
+    return {
+      name: 'John',
+    };
+  } else if (random < 0.66) {
+    return {
+      name: 'Sarah',
+      dogName: 'Rex',
+    };
+  } else {
+    return {
+      name: 'Bob',
+      managePeople() {
+        console.log('Managing people...');
+      },
+      delegateTasks() {
+        console.log('Delegate tasks...');
+      },
+    };
+  }
+}
+
+console.log('Random Persona: ', employeeTwo);
+
+// With type guard
+console.log('Employee name: ', employeeTwo.name); // Will work always, because the DogOwner and the ManagerTwo extends the Persona and they all have name.
+// console.log(employeeTwo.delegateTasks); // Will not work always, but only when is the Manager type
+
+function isManager(obj: Persona | DogOwner | ManagerTwo): boolean {
+  return 'managePeople' in obj;
+}
+
+console.log(isManager(employeeTwo));
+
+// details
+// if (isManager(employee)) {
+// employee.delegateTasks(); // Typescript complains, because the function returns a boolean and in a particular case it might be true, it does not signal to Typescript, that he employee is only Manager type.
+// }
+
+// To make it work, we have to change the return type of the function as follow:
+function isManagerTwo(obj: Persona | DogOwner | ManagerTwo): obj is ManagerTwo {
+  return 'managePeople' in obj;
+}
+
+if (isManagerTwo(employee)) {
+  employee.delegateTasks();
+}
+
+// Difference between Interface and Type Alias
+
+// Type aliases can represent primitive types, union types, intersection types, tuples, etc., while interfaces are primarily used to represent the shape of an object.
+
+// Interfaces can be merged using declaration merging. If you define an interface with the same name more than once, TypeScript will merge their definitions. Type aliases can't be merged in this way.
+
+// Interfaces can be implemented by classes, while type aliases cannot.
+
+// Type aliases can use computed properties, while interfaces cannot.
+const propName2 = 'age';
+
+type Animal2 = {
+  [propName2]: number;
+};
+
+let tiger2: Animal2 = { [propName]: 5 };
+console.log('Tiger2: ', tiger2);
+
+// Tuples
+let person3: [string, number] = ['John', 25];
+let date: [number, number, number] = [12, 18, 2001];
+console.log(date);
+// Gotcha
+// We can use push method on the date:
+date.push(34);
+date.push(1234);
+// All of these are available and Typescript will not complain
+console.log(date);
+// If we want to keep the type limited just to 3 numbers, use readonly
+let date2: readonly [number, number, number] = [12, 28, 2002];
+console.log(date);
+
+// date2.push(35); // Error!
+
+function getPerson(): [string, number] {
+  return ['john', 25];
+}
+
+let randomPerson = getPerson();
+console.log(randomPerson[0]);
+console.log(randomPerson[1]);
+
+// Optional property in tuple
+let susan2: [string, number?] = ['susan'];
+
+// Enums
+enum ServerResponseStatus {
+  Success,
+  Error,
+}
+
+// By default the first property of the tuple has the value of 0, then the second has value of 1 and etc.
+console.log(ServerResponseStatus);
+
+// We can re assigned the values
+enum ServerResponseStatus2 {
+  Success = 200,
+  Error = 500,
+}
+
+console.log(ServerResponseStatus2);
+
+// When we reassigned the values we are getting four properties instead of two. See the log below
+Object.values(ServerResponseStatus2).forEach((value) => {
+  console.log(value);
+});
+
+// If we make the changes:
+enum ServerResponseStatus3 {
+  Success = 'Success',
+  Error = 'Error',
+}
+
+// We are getting just the two values:
+console.log(ServerResponseStatus3);
+
+// Another way to fix the issue is with type guard
+
+enum ServerResponseStatus4 {
+  Success = 200,
+  Error = 500,
+}
+
+Object.values(ServerResponseStatus4).forEach((value) => {
+  if (typeof value === 'number') console.log(value);
+});
+
+interface ServerResponse {
+  result: ServerResponseStatus;
+  data: string[];
+}
+
+function getServerResponse(): ServerResponse {
+  return {
+    result: ServerResponseStatus.Success,
+    data: ['Data'],
+  };
+}
+
+const response: ServerResponse = getServerResponse();
+console.log(response);
+
+// Challenge
+
+enum UserRole {
+  Admin,
+  Manage,
+  Employee,
+}
+
+type UserThree = {
+  id: number;
+  name: string;
+  role: UserRole;
+  contact: [string, string];
+};
+
+function createUserThree(user: UserThree): UserThree {
+  return user;
+}
+
+const user3: UserThree = createUserThree({
+  id: 1,
+  name: 'John Doe',
+  role: UserRole.Admin,
+  contact: ['john@mail.com', '123-456-789'],
+});
+
+console.log(user3);
+
+// Assertion
+let someValue: any = 'This is a string';
+
+// Using type assertion to treat 'someValue' as a string
+let strLength: number = (someValue as string).length;
+
+type Bird = {
+  name: string;
+};
+
+// Assume we have a JSON string from an API or local file
+let birdString = '{"name": "Eagle"}';
+let dogString = '{"breed": "Poodle"}';
+
+//
+
+// Parse the JSON string into an object
+let birdObject = JSON.parse(birdString);
+let dogObject = JSON.parse(dogString);
+
+// We're sure that the jsonObject is actually a Bird
+let bird = birdObject as Bird;
+let dog = dogObject as Bird;
+
+console.log(bird.name);
+console.log(dog.name);
+
+enum Status {
+  Pending = 'pending',
+  Declined = 'declined',
+}
+
+type User4 = {
+  name: string;
+  status: Status;
+};
+// save Status.Pending in the DB as a string
+// retrieve string from the DB
+const statusValue = 'pending';
+
+const user: User4 = { name: 'john', status: statusValue as Status };
+
+// Type Unknown
+let unknownValue: unknown;
+
+unknownValue = 'hello world';
+unknownValue = [1, 2, 3];
+unknownValue = 42.33456;
+
+unknownValue.toFixed(2); // Error
+
+// unknownValue.toFixed( ); // Error: Object is of type 'unknown'
+
+// Now, let's try to use unknownValue
+if (typeof unknownValue === 'number') {
+  // TypeScript knows that unknownValue is a string in this block
+  console.log(unknownValue.toFixed(2)); // OK
+}
+
+function runSomeCode() {
+  const random = Math.random();
+  if (random < 0.5) {
+    throw new Error('Something went wrong');
+  } else {
+    throw 'some error';
+  }
+}
+
+try {
+  runSomeCode();
+} catch (error) {
+  if (error instanceof Error) {
+    console.log(error.message);
+  } else {
+    console.log(error);
+    console.log('there was an error....');
+  }
+}
