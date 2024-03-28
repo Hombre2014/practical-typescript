@@ -1,3 +1,8 @@
+import { z } from 'zod';
+import newStudent3, { sayHello, person2, type Student } from './actions';
+import { Random } from './types';
+// import { someValue } from './example.js'; // Normally it does not allow, but if you use "allowJs": true option in the tsconfig it will allow.
+
 console.log('Hello, World!');
 
 let awesomeName: string = 'shakeAndBake';
@@ -746,7 +751,7 @@ unknownValue = 'hello world';
 unknownValue = [1, 2, 3];
 unknownValue = 42.33456;
 
-unknownValue.toFixed(2); // Error
+// unknownValue.toFixed(2); // Error
 
 // unknownValue.toFixed( ); // Error: Object is of type 'unknown'
 
@@ -775,3 +780,546 @@ try {
     console.log('there was an error....');
   }
 }
+
+// Type never
+// let somevar:never = 0; // We can not assign a value to type never!
+
+type Theme = 'light' | 'dark';
+
+function checkTheme(theme: Theme) {
+  if (theme === 'light') {
+    console.log('light theme');
+    return;
+  }
+  if (theme === 'dark') {
+    console.log('dark theme');
+    return;
+  }
+  theme;
+  // theme is of type never, because it can never have a value that is not 'light' or 'dark'.
+}
+
+enum Color {
+  Red,
+  Blue,
+  // Green,
+}
+
+function getColorName(color: Color) {
+  switch (color) {
+    case Color.Red:
+      return 'Red';
+    case Color.Blue:
+      return 'Blue';
+    default:
+      // at build time
+      let unexpectedColor: never = color;
+      // at runtime
+      throw new Error(`Unexpected color value: ${unexpectedColor}`);
+  }
+}
+
+console.log(getColorName(Color.Red)); // Red
+console.log(getColorName(Color.Blue)); // Blue
+// console.log(getColorName(Color.Green)); // Green
+
+// Modules
+// in tsconfig - moduleDetectioin: force - to treat the files as modules.
+sayHello('Typescript');
+console.log(newStudent3);
+console.log(person2);
+const anotherStudent: Student = {
+  name: 'David',
+  age: 26,
+};
+console.log(anotherStudent);
+
+// Type Guarding
+// Typeof guard
+type ValueType = string | number | boolean;
+
+let value: ValueType;
+const random2 = Math.random();
+value = random2 < 0.33 ? 'Hello' : random2 < 0.66 ? 123.456 : true;
+
+function checkValue(value: ValueType): void {
+  if (typeof value === 'string') {
+    console.log(value.toUpperCase());
+    return;
+  }
+  if (typeof value === 'number') {
+    console.log(value.toFixed(2));
+    return;
+  }
+  console.log(`It is boolean: ${value}`);
+}
+
+checkValue(value);
+
+// Equality Narrowing
+type Dog = { type: 'dog'; name: string; bark: () => void };
+type Cat = { type: 'cat'; name: string; meow: () => void };
+type AnimalType = Dog | Cat;
+
+// function makeSound(animal: AnimalType) {
+//   if (animal.type === 'dog') {
+//     animal.bark();
+//   } else {
+//     animal.meow();
+//   }
+// }
+
+// Check for property
+// function makeSound(animal: AnimalType) {
+//   if ('bark' in animal) {
+//     animal.bark();
+//   } else {
+//     animal.meow();
+//   }
+// }
+
+// Truthy/Falsy guard
+function printLength(str: string | null | undefined) {
+  if (str) {
+    console.log(str.length);
+  } else {
+    console.log('No string or 0 length');
+  }
+}
+
+printLength('hello');
+printLength('');
+printLength(null);
+// printLength();
+printLength(undefined);
+
+// Instance of
+try {
+  // throw new Error('This is an error');
+  throw 'some error';
+} catch (error) {
+  if (error instanceof Error) {
+    console.log(`Caught an Error object: ${error.message}`);
+  } else {
+    console.log('Unknown error ...');
+  }
+}
+
+function checkInput(input: Date | string): string {
+  if (input instanceof Date) {
+    return input.getFullYear().toString();
+  }
+  return input;
+}
+
+const year = checkInput(new Date());
+const randomString = checkInput('2023-10-09');
+console.log(year);
+console.log(randomString);
+
+// Type Predicate
+type Student5 = {
+  name: string;
+  study: () => void;
+};
+
+type User5 = {
+  name: string;
+  login: () => void;
+};
+
+type Person5 = Student5 | User5;
+
+const randomPerson5 = (): Person5 => {
+  return Math.random() > 0.5
+    ? { name: 'john', study: () => console.log('Studying') }
+    : { name: 'mary', login: () => console.log('Logging in') };
+};
+
+// const person5 = randomPerson5();
+
+function isStudent(person: Person5): person is Student5 {
+  // return 'study' in person; // One way
+  return (person as Student5).study !== undefined; // Type assertion, another way
+}
+
+// if (isStudent(person5)) {
+//   person5.study();
+// } else {
+//   person5.login();
+// }
+
+// Gotcha if you hard code the person as student type.
+const person5: Person5 = {
+  name: 'anna',
+  study: () => console.log('Studying'),
+  // login: () => console.log('Logging in'),
+};
+
+if (isStudent(person5)) {
+  person5.study();
+} else {
+  // person5.login(); // Error, because it could never be a type User, when hard coded as a student type.
+}
+
+// Discriminating Unions and exhaustive check using never type
+type IncrementAction = {
+  amount: number;
+  timestamp: number;
+  user: string;
+};
+
+type DecrementAction = {
+  amount: number;
+  timestamp: number;
+  user: string;
+};
+
+type Action = IncrementAction | DecrementAction;
+
+function reducer(state: number, action: Action) {}
+
+const newState = reducer(15, {
+  user: 'john',
+  amount: 5,
+  timestamp: 123456,
+});
+
+// In the above case there is no way to determine if the action is Increment or Decrement, since they have the exact same properties.
+// So we can modify the types by adding a different type, so we can identify them, for example type: "increment" and type: "decrement"
+type IncrementActionNew = {
+  amount: number;
+  type: 'increment';
+  timestamp: number;
+  user: string;
+};
+
+type DecrementActionNew = {
+  amount: number;
+  type: 'decrement';
+  timestamp: number;
+  user: string;
+};
+
+type ActionNew = IncrementActionNew | DecrementActionNew;
+
+function reducerNew(state: number, action: ActionNew) {
+  switch (action.type) {
+    case 'increment':
+      return state + action.amount;
+    case 'decrement':
+      return state - action.amount;
+    default:
+      const unexpectedAction: never = action;
+      throw new Error(`Unexpected action: ${unexpectedAction}`);
+  }
+}
+
+// Generics Fundamentals
+// let array1: string[] = ['Apple', 'Banana', 'Mango'];
+// let array2: number[] = [1, 2, 3];
+// let array3: boolean[] = [true, false, true];
+
+let array1: Array<string> = ['Apple', 'Banana', 'Mango'];
+let array2: Array<number> = [1, 2, 3];
+let array3: Array<boolean> = [true, false, true];
+
+// The same function for each type
+// function createString(arg:string):string{
+//   return arg;
+// }
+
+// function createNumber(arg:number):number{
+//   return arg;
+// }
+
+// Solution with generic Type T
+function genericFunction<T>(arg: T): T {
+  return arg;
+}
+
+const someStringValue = genericFunction<string>('Hello world');
+const someNumberValue = genericFunction<number>(2);
+
+interface GenericInterface<T> {
+  value: T;
+  getValue: () => T;
+}
+
+const genericString: GenericInterface<string> = {
+  value: 'Hello World!',
+  getValue() {
+    return this.value;
+  },
+};
+
+// async function someFunc(): string { // This is an error, since async function returns a promise.
+async function someFunc(): Promise<string> {
+  // Solution with generic Promise type
+  return 'hello world';
+}
+
+async function someFunc2(): Promise<number> {
+  return 123;
+}
+
+const result5 = someFunc();
+
+// Challenge
+// create those functions
+// createArray<string>(3, 'hello'); // ["hello", "hello", "hello"]
+// createArray<number>(4, 100); // [100, 100, 100, 100]
+// So, below function works only with string
+function generateStringArray(length: number, value: string): string[] {
+  let result: string[] = [];
+  result = Array(length).fill(value);
+  return result;
+}
+
+console.log(generateStringArray(6, 'ura'));
+
+// To make it generic:
+function generateArray<T>(length: number, value: T): Array<T> {
+  let result: T[] = [];
+  result = Array(length).fill(value);
+  return result;
+}
+
+console.log(generateArray<string>(4, 'Generic'));
+console.log(generateArray<number>(3, 5));
+console.log(generateArray<boolean>(2, true));
+
+function pair<T, U>(param1: T, param2: U): [T, U] {
+  return [param1, param2];
+}
+
+let result6 = pair<number, string>(123, 'hello');
+console.log(result6);
+
+// We can omit the type for pair function, but use it with caution
+let result7 = pair(123, 'hello'); // It is OK
+
+// Like in React useState() is generic and it can infer a type:
+// const [name, setName] = useState('');
+// But when it is a complex type we have to specify it:
+// const [product, setProduct] = useState<Product[]>([])
+
+// Type constrain on generic type T
+function processValue<T extends string>(value: T): T {
+  console.log(value);
+
+  return value;
+}
+
+processValue('Generic');
+
+// More constrains
+
+type Car2 = {
+  brand: string;
+  model: string;
+};
+
+const car2: Car2 = {
+  brand: 'ford',
+  model: 'mustang',
+};
+
+type Product7 = {
+  name: string;
+  price: number;
+};
+
+const product7: Product7 = {
+  name: 'shoes',
+  price: 1.99,
+};
+
+type Student7 = {
+  name: string;
+  age: number;
+};
+
+const student7: Student7 = {
+  name: 'peter',
+  age: 20,
+};
+
+function printName<T extends Student7>(input: T): void {
+  console.log(input.name);
+}
+
+printName(student7);
+// printName(product7); // Error because it is not the same type, although there is the same property. To make it work we can modify the type to became a union including the Product7 type
+
+// function printName<T extends Student7 | Product7>(input: T): void {
+//   console.log(input.name);
+// }
+
+// Another way
+function printName2<T extends { name: string }>(input: T): void {
+  console.log(input.name);
+}
+
+printName2(student7);
+printName2(product7);
+
+//  Default for generic
+interface StoreData<T> {
+  data: T[];
+}
+
+const storeNumbers: StoreData<number> = {
+  data: [1, 2, 3, 4],
+};
+
+const randomStuff: StoreData<any> = {
+  data: ['random', 1], // If I am not sure what kind of data you can have or modify the interface to <T = any>
+};
+
+// data is located in the data property
+
+// const { data } = axios.get(someUrl);
+
+// axios.get<{ name: string }[]>(someUrl);
+
+// export class Axios {
+//   get<T = any, R = AxiosResponse<T>, D = any>(
+//     url: string,
+//     config?: AxiosRequestConfig<D>
+//   ): Promise<R>;
+// }
+
+// export interface AxiosResponse<T = any, D = any> {
+//   data: T;
+//   status: number;
+//   statusText: string;
+//   headers: RawAxiosResponseHeaders | AxiosResponseHeaders;
+//   config: InternalAxiosRequestConfig<D>;
+//   request?: any;
+// }
+
+// Fetch Data
+const url = 'https://www.course-api.com/react-tours-project';
+
+async function fetchData(url: string) {
+  try {
+    const response = await fetch(url);
+
+    // Check if the request was successful.
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    const errMsg =
+      error instanceof Error ? error.message : 'there was an error...';
+    console.error(errMsg);
+    // throw error;
+    return [];
+  }
+}
+
+const tours = await fetchData(url);
+tours.map((tour: any) => {
+  // Because we do not know the shape of the data we are receiving
+  console.log(tour.name);
+});
+
+// Challenge Solution
+type Tour = {
+  id: string;
+  name: string;
+  info: string;
+  image: string;
+  price: string;
+};
+
+async function fetchDataType(url: string): Promise<Tour[]> {
+  try {
+    const response = await fetch(url);
+
+    // Check if the request was successful.
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: Tour[] = await response.json();
+    return data;
+  } catch (error) {
+    const errMsg =
+      error instanceof Error ? error.message : 'there was an error...';
+    console.error(errMsg);
+    // throw error;
+    return [];
+  }
+}
+
+const tours2 = await fetchDataType(url);
+tours2.map((tour) => {
+  console.log(tour.name);
+});
+
+// If we modify the type Tour with let say
+// type Tour = {
+//   id: string;
+//   name: string;
+//   info: string;
+//   image: string;
+//   price: string;
+//   something: boolean;
+// };
+// and try to log it console.log(tour.something) it will be undefined, but there is no error in the source code. Typescript can not determine if the property will be undefined on the run time.
+
+// Solution with verification at run time.
+// Install zod
+
+const tourSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  info: z.string(),
+  image: z.string(),
+  price: z.string(),
+  // some: z.number(), // If we add now something that zod does not expect during run time it will trigger an Error!
+});
+
+type TourTwo = z.infer<typeof tourSchema>;
+
+async function fetchDataTwo(url: string): Promise<TourTwo[]> {
+  try {
+    const response = await fetch(url);
+
+    // Check if the request was successful.
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const rawData: TourTwo[] = await response.json();
+    const result = tourSchema.array().safeParse(rawData);
+    console.log('Modified function: ', result);
+
+    if (!result.success) {
+      throw new Error(`Invalid data: ${result.error}`);
+    }
+
+    return result.data;
+  } catch (error) {
+    const errMsg =
+      error instanceof Error ? error.message : 'there was an error...';
+    console.error(errMsg);
+    // throw error;
+    return [];
+  }
+}
+
+const tours3 = await fetchDataTwo(url);
+tours3.map((tour) => {
+  console.log(tour.name);
+});
+
+// Declaration file
+// "lib": ["ES2020", "DOM", "DOM.Iterable"], in tsconfig
+// example for bcryptjs, npm i bcrypt install the library, but not the types definitions, so you can't use it, until you install them:
+// npm i --save-dev @types/bcryptjs
