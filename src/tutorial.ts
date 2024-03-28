@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { getParsedType, z } from 'zod';
 import newStudent3, { sayHello, person2, type Student } from './actions';
 import { Random } from './types';
 // import { someValue } from './example.js'; // Normally it does not allow, but if you use "allowJs": true option in the tsconfig it will allow.
@@ -1323,3 +1323,99 @@ tours3.map((tour) => {
 // "lib": ["ES2020", "DOM", "DOM.Iterable"], in tsconfig
 // example for bcryptjs, npm i bcrypt install the library, but not the types definitions, so you can't use it, until you install them:
 // npm i --save-dev @types/bcryptjs
+
+// Classes
+class BookClass {
+  title: string; // Declare the type of the parameters
+  readonly author: string; // Can not change the author!
+  private checkedOut: boolean = false; // Default value
+
+  constructor(title: string, author: string) {
+    this.title = title;
+    this.author = author;
+  }
+
+  checkOut() {
+    // this.checkedOut = true; // Can access the private property inside the class
+    this.checkedOut = this.toggleCheckedOutStatus(); // Able to access the private method from within the class!
+  }
+
+  isCheckedOut() {
+    return this.checkedOut;
+  }
+
+  private toggleCheckedOutStatus() {
+    return !this.checkedOut;
+  }
+}
+
+const deepWorkBook = new BookClass('deep work ', 'cal newport');
+console.log(deepWorkBook);
+// console.log(deepWorkBook.checkedOut); // Can't access the private property
+deepWorkBook.checkOut();
+console.log(deepWorkBook);
+deepWorkBook.checkOut();
+console.log(deepWorkBook.isCheckedOut());
+
+// getter and setter
+// In below example TS does not know about the parameters in the class
+class BookAgain {
+  checkedOut: boolean = false;
+  constructor(title: string, author: string) {}
+}
+
+// If you specify any of the modifiers like - readonly, public or private before the params they became known to TS
+
+class BookThree {
+  private checkedOut: boolean = false;
+  constructor(
+    readonly title: string,
+    public author: string,
+    private someValue: number
+  ) {}
+  public getSomeValue() {
+    return this.someValue;
+  }
+}
+
+const deepWork5 = new BookThree('1984', 'John Dow', 42);
+console.log(deepWork5.getSomeValue());
+
+// getter and setter are special methods that are accessible like properties.
+// Combine them with modifiers.
+
+class BookFour {
+  private checkedOut: boolean = false;
+  constructor(readonly title: string, public author: string) {}
+
+  get info() {
+    return `${this.title} by ${this.author}`;
+  }
+
+  set checkOut(checkedOut: boolean) {
+    this.checkedOut = checkedOut;
+  }
+}
+
+const myBook = new BookFour('Dune', 'Adam Smith');
+console.log(myBook.info);
+myBook.checkOut = true;
+console.log(myBook);
+
+interface IPerson {
+  name: string;
+  age: number;
+  greet(): void;
+}
+
+class PersonFour implements IPerson {
+  constructor(public name: string, public age: number) {}
+  greet(): void {
+    console.log(
+      `Hello, my name is ${this.name} and I'am ${this.age} years old.`
+    );
+  }
+}
+
+const hipster = new PersonFour('ShakeAndBake', 42);
+hipster.greet();
